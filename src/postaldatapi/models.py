@@ -82,6 +82,50 @@ class CitySearchResult:
 
 
 @dataclass
+class BulkValidateRecord:
+    """A single result row in a bulk-validate response.
+
+    Modern field naming (``postal_code`` / ``country_code``) is intentional
+    on the bulk endpoint. Legacy zipcode/country naming is preserved on the
+    older single-record endpoints.
+
+    Attributes:
+        postal_code: The postal code that was validated (echoed from input).
+        country_code: ISO 3166-1 alpha-2 code (echoed from input, uppercased).
+        valid: Whether the postal code exists in the country's dataset.
+        normalized: Canonical key when valid (e.g. "SW1A" for GB outcode-only,
+            FSA prefix for CA), or ``None`` when invalid.
+        reason: Why the record is invalid -- one of ``None`` (when valid),
+            ``"not_found"``, ``"invalid_format"`` (reserved for future use),
+            or ``"unknown_country"``.
+    """
+    postal_code: str
+    country_code: str
+    valid: bool
+    normalized: Optional[str]
+    reason: Optional[str]
+
+
+@dataclass
+class BulkValidateResult:
+    """Result from a bulk-validate request.
+
+    Attributes:
+        results: One :class:`BulkValidateRecord` per input record, in the
+            same order as the request.
+        total_cost: Total cost of this request in USD (N records × per-query rate).
+        balance: Account balance after this request was charged.
+        rate_limit: Current rate limit status.
+        raw: The complete raw API response dict.
+    """
+    results: List["BulkValidateRecord"]
+    total_cost: float
+    balance: float
+    rate_limit: RateLimit = field(default_factory=RateLimit)
+    raw: Dict[str, Any] = field(default_factory=dict, repr=False)
+
+
+@dataclass
 class MetazipResult:
     """Result from a metazip (rich metadata) lookup.
 

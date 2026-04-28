@@ -13,6 +13,8 @@ import pytest
 
 from postaldatapi import (
     PostalDataPI,
+    BulkValidateRecord,
+    BulkValidateResult,
     LookupResult,
     ValidateResult,
     CitySearchResult,
@@ -187,3 +189,73 @@ class TestMetazip:
         result = client().metazip("90210")
         assert isinstance(result.meta, dict)
         assert result.meta["state"] == "California"
+
+
+class TestBulkValidate:
+    @requires_api_key
+    def test_bulk_validate_us_records(self):
+        result = client().validate_bulk([
+            {"postal_code": "90210", "country_code": "US"},
+            {"postal_code": "10001", "country_code": "US"},
+        ])
+        assert isinstance(result, BulkValidateResult)
+        assert len(result.results) == 2
+        for r in result.results:
+            assert isinstance(r, BulkValidateRecord)
+            assert r.valid is True
+            assert r.normalized is not None
+            assert r.reason is None
+
+    @requires_api_key
+    def test_bulk_validate_mixed_country(self):
+        result = client().validate_bulk([
+            {"postal_code": "90210", "country_code": "US"},
+            {"postal_code": "SW1A 1AA", "country_code": "GB"},
+        ])
+        assert len(result.results) == 2
+        # GB outcode normalization
+        assert result.results[1].normalized == "SW1A"
+
+    @requires_api_key
+    def test_bulk_validate_per_record_reasons(self):
+        result = client().validate_bulk([
+            {"postal_code": "90210", "country_code": "US"},
+            {"postal_code": "FOO99", "country_code": "US"},
+            {"postal_code": "12345", "country_code": "ZZ"},
+        ])
+        assert result.results[0].valid is True
+        assert result.results[1].valid is False
+        assert result.results[1].reason == "not_found"
+        assert result.results[2].valid is False
+        assert result.results[2].reason == "unknown_country"
+
+    @requires_api_key
+    def test_bulk_validate_total_cost_and_balance(self):
+        result = client().validate_bulk([
+            {"postal_code": "90210", "country_code": "US"},
+        ])
+        assert result.total_cost > 0
+        assert isinstance(result.balance, (int, float))
+
+    @requires_api_key
+    def test_bulk_validate_accepts_camel_case_keys(self):
+        # Tolerate JS-style keys for ergonomic JSON copy-paste
+        result = client().validate_bulk([
+            {"postalCode": "90210", "countryCode": "US"},
+        ])
+        assert result.results[0].valid is True
+
+    @requires_api_key
+    def test_bulk_validate_accepts_tuple_records(self):
+        result = client().validate_bulk([("90210", "US"), ("10001", "US")])
+        assert len(result.results) == 2
+        assert all(r.valid for r in result.results)
+
+    @requires_api_key
+    def test_bulk_validate_empty_records_raises(self):
+        with pytest.raises(ValidationError):
+            client().validate_bulk([])
+
+    def test_bulk_validate_record_missing_fields_raises(self):
+        with pytest.raises(ValueError):
+            client().validate_bulk([{"postal_code": "90210"}])  # no country_code

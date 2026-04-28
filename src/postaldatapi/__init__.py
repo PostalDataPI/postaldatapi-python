@@ -2,6 +2,8 @@
 
 from postaldatapi.client import PostalDataPI
 from postaldatapi.models import (
+    BulkValidateRecord,
+    BulkValidateResult,
     LookupResult,
     ValidateResult,
     CitySearchResult,
@@ -19,10 +21,12 @@ from postaldatapi.exceptions import (
     ServerError,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "PostalDataPI",
+    "BulkValidateRecord",
+    "BulkValidateResult",
     "LookupResult",
     "ValidateResult",
     "CitySearchResult",

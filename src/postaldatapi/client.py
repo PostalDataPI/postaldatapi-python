@@ -16,6 +16,8 @@ from postaldatapi.exceptions import (
     ValidationError,
 )
 from postaldatapi.models import (
+    BulkValidateRecord,
+    BulkValidateResult,
     CitySearchResult,
     LookupResult,
     MetazipResult,
@@ -129,6 +131,77 @@ class PostalDataPI:
         return ValidateResult(
             valid=data.get("valid", False),
             postal_code=data.get("zipcode", postal_code),
+            balance=data.get("balance", 0.0),
+            rate_limit=self._parse_rate_limit(data),
+            raw=data,
+        )
+
+    def validate_bulk(
+        self,
+        records: list,
+    ) -> BulkValidateResult:
+        """Validate up to 1,000 postal codes in a single request.
+
+        Same flat per-record price as :meth:`validate` ($0.000028/record).
+        Mixed countries supported in one request. Per-record errors are
+        reported in :attr:`BulkValidateResult.results`, not as exceptions.
+
+        Args:
+            records: List of dicts shaped ``{"postal_code": str, "country_code": str}``,
+                or list of (postal_code, country_code) tuples. Max 1000.
+
+        Returns:
+            BulkValidateResult with per-record results, total cost, and balance.
+
+        Raises:
+            ValidationError: Empty or > 1000 records, malformed input.
+            AuthenticationError: Invalid API key.
+            RateLimitError: Rate limit would be exceeded by this batch.
+            InsufficientBalanceError: Balance too low for full batch.
+
+        Example::
+
+            results = client.validate_bulk([
+                {"postal_code": "90210", "country_code": "US"},
+                {"postal_code": "SW1A 1AA", "country_code": "GB"},
+            ])
+            for r in results.results:
+                print(r.postal_code, r.valid, r.normalized, r.reason)
+            print(f"Cost: ${results.total_cost:.6f}, Balance: ${results.balance:.6f}")
+        """
+        normalized_records = []
+        for r in records:
+            if isinstance(r, dict):
+                pc = r.get("postal_code") or r.get("postalCode")
+                cc = r.get("country_code") or r.get("countryCode")
+            else:
+                # Assume (postal_code, country_code) tuple
+                pc, cc = r[0], r[1]
+            if not pc or not cc:
+                raise ValueError(
+                    f"Each record must have postal_code and country_code; got {r!r}"
+                )
+            normalized_records.append({"postalCode": pc, "countryCode": cc})
+
+        payload: Dict[str, Any] = {
+            "apiKey": self._api_key,
+            "records": normalized_records,
+        }
+
+        data = self._request("POST", "/api/validate-bulk", payload)
+
+        return BulkValidateResult(
+            results=[
+                BulkValidateRecord(
+                    postal_code=row.get("postalCode", ""),
+                    country_code=row.get("countryCode", ""),
+                    valid=row.get("valid", False),
+                    normalized=row.get("normalized"),
+                    reason=row.get("reason"),
+                )
+                for row in data.get("results", [])
+            ],
+            total_cost=data.get("totalCost", 0.0),
             balance=data.get("balance", 0.0),
             rate_limit=self._parse_rate_limit(data),
             raw=data,
