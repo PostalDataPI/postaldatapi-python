@@ -162,12 +162,14 @@ class TestCitySearch:
             client().search_city("Beverly Hills")
 
 
-# -- Metazip tests --
+# -- Metacode / Metazip tests --
 
-class TestMetazip:
+class TestMetacode:
+    """Tests for the new canonical method name (added in v0.3.0)."""
+
     @requires_api_key
-    def test_us_metazip(self):
-        result = client().metazip("90210")
+    def test_us_metacode(self):
+        result = client().metacode("90210")
         assert isinstance(result, MetazipResult)
         assert result.city == "Beverly Hills"
         assert result.postal_code == "90210"
@@ -177,8 +179,8 @@ class TestMetazip:
         assert "timezone" in result.meta
 
     @requires_api_key
-    def test_non_us_metazip(self):
-        result = client().metazip("10115", country="DE")
+    def test_non_us_metacode(self):
+        result = client().metacode("10115", country="DE")
         assert isinstance(result, MetazipResult)
         assert result.city == "Berlin"
         assert result.latitude is not None
@@ -186,9 +188,32 @@ class TestMetazip:
 
     @requires_api_key
     def test_meta_dict_accessible(self):
-        result = client().metazip("90210")
+        result = client().metacode("90210")
         assert isinstance(result.meta, dict)
         assert result.meta["state"] == "California"
+
+
+class TestMetazipAlias:
+    """Tests for the deprecated alias preserved for backward compatibility."""
+
+    @requires_api_key
+    def test_metazip_alias_still_works(self):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            result = client().metazip("90210")
+        assert isinstance(result, MetazipResult)
+        assert result.city == "Beverly Hills"
+
+    @requires_api_key
+    def test_metazip_emits_deprecation_warning(self):
+        import warnings
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", DeprecationWarning)
+            client().metazip("90210")
+        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        assert len(deprecations) >= 1
+        assert "metacode" in str(deprecations[0].message).lower()
 
 
 class TestBulkValidate:

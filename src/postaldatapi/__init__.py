@@ -7,6 +7,7 @@ from postaldatapi.models import (
     LookupResult,
     ValidateResult,
     CitySearchResult,
+    MetacodeResult,
     MetazipResult,
     RateLimit,
     RateLimitWindow,
@@ -21,7 +22,7 @@ from postaldatapi.exceptions import (
     ServerError,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "PostalDataPI",
@@ -30,6 +31,7 @@ __all__ = [
     "LookupResult",
     "ValidateResult",
     "CitySearchResult",
+    "MetacodeResult",
     "MetazipResult",
     "RateLimit",
     "RateLimitWindow",

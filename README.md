@@ -33,7 +33,7 @@ results = client.search_city("Beverly Hills", state="CA")
 print(results.postal_codes)       # ['90209', '90210', '90211', ...]
 
 # Get rich metadata
-meta = client.metazip("90210")
+meta = client.metacode("90210")
 print(meta.meta["county"])        # Los Angeles County
 print(meta.meta["timezone"])      # America/Los_Angeles
 print(meta.latitude)              # 34.1031
@@ -54,9 +54,11 @@ Checks whether a postal code exists. Returns `ValidateResult` with `.valid` bool
 
 Finds postal codes matching a city name. State is required for US queries.
 
-### `client.metazip(postal_code, *, country="US")`
+### `client.metacode(postal_code, *, country="US")`
 
 Returns rich metadata: coordinates, county (US), timezone (US), and all available data source fields.
+
+(Available as of v0.3.0. The earlier name `client.metazip()` is preserved as a deprecated alias and emits a `DeprecationWarning` — both methods return identical data.)
 
 ## Country Support
 

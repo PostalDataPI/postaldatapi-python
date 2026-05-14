@@ -248,11 +248,15 @@ class PostalDataPI:
             raw=data,
         )
 
-    def metazip(self, postal_code: str, *, country: str = "US") -> MetazipResult:
+    def metacode(self, postal_code: str, *, country: str = "US") -> MetazipResult:
         """Get rich metadata for a postal code.
 
         Returns detailed information including coordinates, county (US),
         timezone (US), and any additional metadata from the data source.
+
+        This is the canonical method name (added in v0.3.0). The earlier
+        name ``metazip()`` is preserved as a deprecated alias and will
+        emit a :class:`DeprecationWarning` when called.
 
         Args:
             postal_code: The postal code to look up.
@@ -274,7 +278,7 @@ class PostalDataPI:
         if country.upper() != "US":
             payload["country"] = country.upper()
 
-        data = self._request("POST", "/api/metazip", payload)
+        data = self._request("POST", "/api/metacode", payload)
 
         meta = data.get("meta", {})
         # US uses "city", non-US uses "placeName"
@@ -292,6 +296,26 @@ class PostalDataPI:
             rate_limit=self._parse_rate_limit(data),
             raw=data,
         )
+
+    def metazip(self, postal_code: str, *, country: str = "US") -> MetazipResult:
+        """Deprecated alias for :meth:`metacode`. Calls /api/metacode under
+        the hood; emits :class:`DeprecationWarning`.
+
+        Kept indefinitely for backward compatibility with code written
+        against postaldatapi <= 0.2.0. New code should use
+        :meth:`metacode` directly — "metacode" is brand-neutral and
+        works for ZIP codes, postal codes, postcodes, PLZ, etc.
+        """
+        import warnings
+
+        warnings.warn(
+            "PostalDataPI.metazip() is deprecated; use metacode() instead. "
+            "Both methods return identical data and hit the same /api/metacode "
+            "endpoint as of SDK v0.3.0.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.metacode(postal_code, country=country)
 
     # -- Internal helpers --
 

@@ -150,3 +150,9 @@ class MetazipResult:
     balance: float
     rate_limit: RateLimit = field(default_factory=RateLimit)
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
+
+
+# Forward-looking alias added in v0.3.0 alongside the metazip → metacode
+# rename. `MetacodeResult` and `MetazipResult` are the same type; both
+# names are exported so callers can write whichever feels right.
+MetacodeResult = MetazipResult
