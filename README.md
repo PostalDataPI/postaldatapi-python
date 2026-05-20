@@ -1,6 +1,6 @@
 # PostalDataPI Python SDK
 
-Official Python client for the [PostalDataPI](https://postaldatapi.com) global postal code API. Look up, validate, and search postal codes across 70+ countries with sub-10ms response times.
+Official Python client for the [PostalDataPI](https://postaldatapi.com) global postal code API. Look up, validate, and search postal codes across 240+ countries and territories with sub-5ms server response times.
 
 ## Installation
 
